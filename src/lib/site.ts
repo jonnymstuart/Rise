@@ -5,8 +5,7 @@
 export const site = {
   name: "Jonny Stuart",
   role: "AI Product & Design Partner",
-  // TODO: confirm final personal domain
-  url: "https://jonnystuart.com",
+  url: "https://www.jonnystuart.com",
   email: "jonny@userise.co",
   location: "Lisbon, Portugal",
   tagline: "I design and ship beautiful, revenue-generating AI products.",

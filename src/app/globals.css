@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  /* ---- Brand palette — Jonny (light) ---- */
+  --color-canvas: #ebe5e1; /* warm cream page background */
+  --color-surface: #f4efec; /* raised cards / sections */
+  --color-ink: #121212; /* primary text + dark buttons */
+  --color-ink-2: #292929; /* secondary text */
+  --color-muted: #7a716c; /* tertiary / captions */
+  --color-line: #d9d0cb; /* hairlines + borders */
+  --color-accent: #fa32a0; /* signature magenta */
+  --color-violet: #7b2ff0; /* gradient companion */
+
+  /* ---- Type (single family: PP Eiko) ---- */
+  --font-sans: var(--font-eiko), ui-sans-serif, system-ui, sans-serif;
+
+  --text-display: clamp(3rem, 8vw, 8.75rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.03em;
+
+  --text-h1: clamp(2.5rem, 6vw, 5.5rem);
+  --text-h1--line-height: 1.04;
+  --text-h1--letter-spacing: -0.025em;
+
+  --text-h2: clamp(2rem, 4.5vw, 4rem);
+  --text-h2--line-height: 1.06;
+  --text-h2--letter-spacing: -0.02em;
+
+  --text-h3: clamp(1.5rem, 2.5vw, 2.75rem);
+  --text-h3--line-height: 1.12;
+  --text-h3--letter-spacing: -0.015em;
+
+  --text-h4: 1.125rem;
+  --text-h4--line-height: 1.4;
+  --text-h4--letter-spacing: -0.01em;
+
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.6;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+  --text-small--letter-spacing: 0.01em;
+
+  /* ---- Radii ---- */
+  --radius-card: 0.75rem;
+  --radius-pill: 999px;
+
+  /* ---- Motion ---- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --gradient-brand: linear-gradient(
+    135deg,
+    #fa32a0 0%,
+    #c02bc9 45%,
+    #7b2ff0 100%
+  );
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* The signature magenta→violet brand gradient. */
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+}
+
+/* Subtle uppercase eyebrow/label used across sections. */
+@utility eyebrow {
+  font-size: var(--text-small);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* ---- Marquee (logo wall) ---- */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.marquee__track {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-width: 100%;
+  animation: marquee 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track {
+    animation: none;
+  }
+}

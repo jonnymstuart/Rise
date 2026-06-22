@@ -1,4 +1,5 @@
 import { Hero } from "@/components/sections/home/hero";
+import { WorkList } from "@/components/sections/home/work-list";
 import { JsonLd } from "@/components/seo/json-ld";
 import { site } from "@/lib/site";
 
@@ -38,6 +39,7 @@ export default function HomePage() {
       <JsonLd data={personLd} />
       <JsonLd data={websiteLd} />
       <Hero />
+      <WorkList />
     </>
   );
 }

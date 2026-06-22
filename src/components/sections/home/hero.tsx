@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ScrambleText } from "@/components/motion/scramble-text";
-import { PixelGradient } from "@/components/visual/pixel-gradient";
 import { site } from "@/lib/site";
 
 type Segment = { text: string; href?: string };
@@ -35,11 +34,7 @@ const PARTS = (() => {
  */
 export function Hero() {
   return (
-    <section className="relative isolate flex min-h-svh flex-col overflow-hidden">
-      <PixelGradient className="absolute inset-0 -z-20" />
-      {/* legibility lift over the gradient */}
-      <div className="absolute inset-0 -z-10 bg-canvas/40" />
-
+    <section className="relative flex min-h-svh flex-col">
       {/* top key-line — small-caps details across the full width */}
       <div className="mt-[72px] border-t border-ink/15 md:mt-20">
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-6 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-ink/55 sm:px-10 md:grid-cols-4 lg:px-16">

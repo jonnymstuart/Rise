@@ -1,36 +1,16 @@
-import Link from "next/link";
-import { ScrambleText } from "@/components/motion/scramble-text";
+import { RotatingWords } from "@/components/motion/rotating-words";
+import { Reveal } from "@/components/motion/reveal";
 import { site } from "@/lib/site";
 
-type Segment = { text: string; href?: string };
-
-// One sentence. The key words are doorways. Edit copy + links here.
-const LINE: Segment[] = [
-  { text: "I bring " },
-  { text: "clarity", href: "/about" },
-  { text: ", " },
-  { text: "craft", href: "/work" },
-  { text: " and " },
-  { text: "results", href: "/work-with-me" },
-  { text: " to design‑led businesses." },
-];
-
-// Pre-compute a left-to-right decode delay (ms) for each segment so the whole
-// line resolves as one continuous wave.
-const PARTS = (() => {
-  let cursor = 0;
-  return LINE.map((seg) => {
-    const delay = cursor * 26;
-    cursor += seg.text.length;
-    return { ...seg, delay };
-  });
-})();
+// The cycling values. Edit the lists here.
+const VALUES = ["clarity", "craft", "results"];
+const AUDIENCES = ["ambitious CEOs", "impactful founders", "scaling startups"];
 
 /**
- * Hero — one editorial first screen, one sentence.
- * A lo-fi bit-mapped gradient drifts behind hairline key-lines and small-caps
- * labels; the line decodes into place, and its key words are links into the
- * depth. Says everything, repeats nothing.
+ * Hero — one line, two cycling slots.
+ * "I bring ⟨clarity·craft·results⟩ to ⟨founders·CEOs·high-growth businesses⟩".
+ * Each slot reserves the width/height of its longest option, so the words
+ * cycle without the line ever shifting or re-wrapping.
  */
 export function Hero() {
   return (
@@ -45,40 +25,43 @@ export function Hero() {
         </div>
       </div>
 
-      {/* the one line */}
+      {/* the line — value + audience cycle in fixed-size slots (no reflow) */}
       <div className="flex flex-1 items-center px-6 py-20 sm:px-10 lg:px-16">
-        <h1 className="max-w-[24ch] text-h1 uppercase leading-[1.02] text-ink">
-          {PARTS.map((seg, i) =>
-            seg.href ? (
-              <Link
-                key={i}
-                href={seg.href}
-                className="text-accent underline decoration-accent/40 decoration-2 underline-offset-[0.12em] transition-colors hover:decoration-accent"
-              >
-                <ScrambleText text={seg.text} delay={seg.delay} duration={420} />
-              </Link>
-            ) : (
-              <ScrambleText
-                key={i}
-                text={seg.text}
-                delay={seg.delay}
-                duration={420}
-              />
-            ),
-          )}
-        </h1>
+        <Reveal>
+          <h1 className="max-w-[18ch] text-h1 uppercase leading-[1.04] text-ink">
+            <span className="block">
+              I bring{" "}
+              <RotatingWords
+                words={VALUES}
+                className="text-accent"
+                startDelay={900}
+                interval={2400}
+              />{" "}
+              to
+            </span>
+            <RotatingWords
+              words={AUDIENCES}
+              className="block text-accent"
+              startDelay={1200}
+              interval={3000}
+            />
+          </h1>
+        </Reveal>
       </div>
 
-      {/* bottom key-line */}
+      {/* bottom key-line — info, mirroring the top nav style */}
       <div className="border-t border-ink/15">
-        <div className="flex items-center justify-between px-6 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-ink/55 sm:px-10 lg:px-16">
-          <span>Open to select partners</span>
-          <a
-            href={`mailto:${site.email}`}
-            className="transition-colors hover:text-ink"
-          >
-            {site.email}
-          </a>
+        <div className="grid grid-cols-2 items-center gap-x-4 gap-y-1 px-6 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-ink/55 sm:px-10 md:grid-cols-4 lg:px-16">
+          <span className="inline-flex items-center gap-2 text-accent">
+            <span className="relative inline-flex size-[0.6em]" aria-hidden>
+              <span className="absolute inline-flex size-full rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+              <span className="relative inline-flex size-full rounded-full bg-accent" />
+            </span>
+            Open to select partners
+          </span>
+          <span className="hidden md:block">Made by Rise</span>
+          <span className="hidden sm:block">{site.location}</span>
+          <span className="text-right md:text-left">&copy; 2026</span>
         </div>
       </div>
     </section>

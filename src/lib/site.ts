@@ -4,7 +4,7 @@
  */
 export const site = {
   name: "Jonny Stuart",
-  role: "AI Product & Design Partner",
+  role: "Fractional CAO/CPO",
   url: "https://www.jonnystuart.com",
   email: "jonny@userise.co",
   location: "Lisbon, Portugal",

@@ -4,11 +4,11 @@
   /* ---- Brand palette — Jonny (light) ---- */
   --color-canvas: #ebe5e1; /* warm cream page background */
   --color-surface: #f4efec; /* raised cards / sections */
-  --color-ink: #121212; /* primary text + dark buttons */
-  --color-ink-2: #292929; /* secondary text */
-  --color-muted: #7a716c; /* tertiary / captions */
+  --color-ink: #2545e6; /* royal blue — all text */
+  --color-ink-2: #2545e6; /* royal blue */
+  --color-muted: #2545e6; /* royal blue */
   --color-line: #d9d0cb; /* hairlines + borders */
-  --color-accent: #2545e6; /* royal blue */
+  --color-accent: #121212; /* black */
   --color-violet: #7b2ff0; /* gradient companion */
 
   /* ---- Type (single family: PP Eiko) ---- */

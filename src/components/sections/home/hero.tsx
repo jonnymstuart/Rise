@@ -47,7 +47,7 @@ export function Hero() {
 
       {/* the one line */}
       <div className="flex flex-1 items-center px-6 py-20 sm:px-10 lg:px-16">
-        <h1 className="max-w-[22ch] text-h1 leading-[1.06] text-ink">
+        <h1 className="max-w-[24ch] text-h1 uppercase leading-[1.02] text-ink">
           {PARTS.map((seg, i) =>
             seg.href ? (
               <Link

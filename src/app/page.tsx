@@ -1,10 +1,4 @@
 import { Hero } from "@/components/sections/home/hero";
-import { Marquee } from "@/components/sections/home/marquee";
-import { Statement } from "@/components/sections/home/statement";
-import { SelectedWork } from "@/components/sections/home/selected-work";
-import { Approach } from "@/components/sections/home/approach";
-import { Ecosystem } from "@/components/sections/home/ecosystem";
-import { HomeCta } from "@/components/sections/home/home-cta";
 import { JsonLd } from "@/components/seo/json-ld";
 import { site } from "@/lib/site";
 
@@ -44,12 +38,6 @@ export default function HomePage() {
       <JsonLd data={personLd} />
       <JsonLd data={websiteLd} />
       <Hero />
-      <Marquee />
-      <Statement />
-      <SelectedWork />
-      <Approach />
-      <Ecosystem />
-      <HomeCta />
     </>
   );
 }

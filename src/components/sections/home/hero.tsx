@@ -16,7 +16,7 @@ export function Hero() {
   return (
     <section className="relative flex min-h-svh flex-col">
       {/* top key-line — small-caps details across the full width */}
-      <div className="mt-[72px] border-t border-ink/15 md:mt-20">
+      <div className="border-t border-ink/15">
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-6 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-ink/55 sm:px-10 md:grid-cols-4 lg:px-16">
           <span className="text-ink/80">{site.name}</span>
           <span className="hidden md:block">{site.role}</span>

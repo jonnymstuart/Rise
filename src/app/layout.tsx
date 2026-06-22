@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { eiko } from "@/lib/fonts";
 import { site } from "@/lib/site";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
-import { SiteHeader } from "@/components/site/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,7 +35,6 @@ export default function RootLayout({
     <html lang="en" className={`${eiko.variable} h-full`}>
       <body className="min-h-full antialiased">
         <SmoothScroll>
-          <SiteHeader />
           <main id="main">{children}</main>
         </SmoothScroll>
       </body>

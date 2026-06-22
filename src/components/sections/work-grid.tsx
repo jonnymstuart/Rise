@@ -67,12 +67,14 @@ export function WorkGrid({
                 </h3>
               </div>
               {item.year && (
-                <span className="shrink-0 text-small text-muted">{item.year}</span>
+                <span className="shrink-0 text-small uppercase tracking-[0.1em] text-muted">
+                  {item.year}
+                </span>
               )}
             </div>
 
             {item.metric && (
-              <p className="mt-3 inline-flex rounded-pill border border-line px-3 py-1 text-small text-ink-2">
+              <p className="mt-3 inline-flex rounded-pill border border-line px-3 py-1 text-small uppercase tracking-[0.1em] text-ink-2">
                 {item.metric}
               </p>
             )}

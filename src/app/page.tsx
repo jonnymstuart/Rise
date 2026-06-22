@@ -1,7 +1,9 @@
 import { Hero } from "@/components/sections/home/hero";
-import { WorkList } from "@/components/sections/home/work-list";
+import { Container } from "@/components/ui/container";
+import { WorkGrid } from "@/components/sections/work-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 import { site } from "@/lib/site";
+import { work } from "@/lib/work";
 
 const personLd = {
   "@context": "https://schema.org",
@@ -39,7 +41,12 @@ export default function HomePage() {
       <JsonLd data={personLd} />
       <JsonLd data={websiteLd} />
       <Hero />
-      <WorkList />
+      <section id="work" className="border-t border-ink/15 py-20 md:py-28">
+        <Container>
+          <p className="eyebrow mb-10 md:mb-14">Selected work</p>
+          <WorkGrid items={work} />
+        </Container>
+      </section>
     </>
   );
 }

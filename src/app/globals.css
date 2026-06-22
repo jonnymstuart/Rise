@@ -2,12 +2,12 @@
 
 @theme {
   /* ---- Brand palette — Jonny (light) ---- */
-  --color-canvas: #ebe5e1; /* warm cream page background */
-  --color-surface: #f4efec; /* raised cards / sections */
+  --color-canvas: #eef1f6; /* cool off-white page */
+  --color-surface: #e7ecf4; /* cool raised surface */
   --color-ink: #2545e6; /* royal blue — all text */
-  --color-ink-2: #2545e6; /* royal blue */
-  --color-muted: #2545e6; /* royal blue */
-  --color-line: #d9d0cb; /* hairlines + borders */
+  --color-ink-2: #3f54cf; /* secondary blue */
+  --color-muted: #7c89c6; /* tertiary / label blue */
+  --color-line: #d4dbe8; /* cool hairline */
   --color-accent: #121212; /* black */
   --color-violet: #7b2ff0; /* gradient companion */
 
@@ -54,9 +54,9 @@
 :root {
   --gradient-brand: linear-gradient(
     135deg,
-    #fa32a0 0%,
-    #c02bc9 45%,
-    #7b2ff0 100%
+    #2545e6 0%,
+    #16265a 55%,
+    #0a1230 100%
   );
 }
 

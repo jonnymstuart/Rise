@@ -2,6 +2,7 @@ import { RotatingWords } from "@/components/motion/rotating-words";
 import { Reveal } from "@/components/motion/reveal";
 import { HoverRoll } from "@/components/motion/hover-roll";
 import { SiteMenu } from "@/components/site/site-menu";
+import { AnimatedBackground } from "@/components/visual/animated-background";
 import { site } from "@/lib/site";
 
 // The cycling audience in "to ___".
@@ -19,7 +20,9 @@ const VP_TYPE =
  */
 export function Hero() {
   return (
-    <section className="relative flex min-h-svh flex-col">
+    <section className="relative flex min-h-svh flex-col overflow-hidden">
+      <AnimatedBackground />
+
       {/* top key-line — a bounded band */}
       <div className="border-y border-ink/15">
         <div className="grid grid-cols-2 items-center gap-x-4 gap-y-1 px-6 py-3 text-[0.68rem] uppercase tracking-[0.2em] text-ink/55 sm:px-10 md:grid-cols-4 lg:px-16">

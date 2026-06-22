@@ -4,20 +4,18 @@ import { useEffect, useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 
 /**
- * Animated background — a real-time WebGL flow field.
+ * Animated background — a real-time WebGL flow field, seen through fluted glass.
  *
- * A single full-screen triangle runs a fragment shader that builds organic,
- * slowly-evolving forms via **domain-warped fractal Brownian motion** (Iñigo
- * Quílez's warping technique): `fbm(p + fbm(p + fbm(p)))`. The field drifts
- * upward forever (continuous, seamless — noise has no edges), is mapped to an
- * off-white → royal-blue → navy → near-black palette, and is masked so it's
- * strongest at the bottom-right and ~zero at the top (the headline never sits
- * in the murk). Fixed frosted grid bands sit on top, aligned to the page grid.
+ * A full-screen triangle runs a fragment shader: large, low-detail forms built
+ * with domain-warped fbm (kept zoomed-in and smooth, not cloudy), drifting
+ * slowly upward forever. A fixed "fluted glass" lens refracts the field into
+ * vertical ribs (the image bends + repeats per rib, exactly like looking
+ * through ribbed glass). Masked so it's strongest bottom-right and ~0 up top.
  *
- * Engineering: capped-DPR low-res buffer (the field is soft, so it upscales for
- * free), `ResizeObserver` sizing, rAF paused on tab-hide, full GL teardown, and
- * a `prefers-reduced-motion` path that paints a single static frame. If WebGL
- * is unavailable the container's CSS colour is the graceful fallback.
+ * Engineering: low-res buffer (upscaled → soft for free), `ResizeObserver`
+ * sizing, rAF paused on tab-hide, reduced-motion static frame, full GL teardown.
+ * Confined to its positioned parent (absolute) — used only in the hero. WebGL
+ * absent → the container's CSS colour is the graceful fallback.
  */
 
 const VERT = `
@@ -50,9 +48,9 @@ float noise(vec2 p) {
 
 float fbm(vec2 p) {
   float v = 0.0;
-  float a = 0.5;
+  float a = 0.55;
   mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 3; i++) {   // few octaves → clean, low detail
     v += a * noise(p);
     p = m * p;
     a *= 0.5;
@@ -61,35 +59,40 @@ float fbm(vec2 p) {
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_res;        // 0..1, origin bottom-left
-  vec2 p = uv * vec2(u_res.x / u_res.y, 1.0) * 2.2;
+  vec2 uv = gl_FragCoord.xy / u_res;
 
-  float t = u_time * 0.06;
-  p.y -= t * 1.2;                            // drift upward, forever
+  // fluted-glass lens: bend each vertical rib toward its centre (refraction)
+  float ribs = 16.0;
+  float r = fract(uv.x * ribs) - 0.5;
+  vec2 ruv = vec2(uv.x - (r / ribs) * 0.85, uv.y);
 
-  // domain warping for organic, fluid forms
+  // zoomed-in, smooth field
+  vec2 p = ruv * vec2(u_res.x / u_res.y, 1.0) * 1.0;
+  float t = u_time * 0.045;
+  p.y -= t * 0.8;                  // drift up, forever
+
   vec2 q = vec2(fbm(p), fbm(p + vec2(5.2, 1.3)));
-  vec2 r = vec2(
-    fbm(p + 1.6 * q + vec2(1.7, 9.2) + 0.15 * t),
-    fbm(p + 1.6 * q + vec2(8.3, 2.8) + 0.126 * t)
+  vec2 w = vec2(
+    fbm(p + 1.5 * q + vec2(1.7, 9.2) + 0.10 * t),
+    fbm(p + 1.5 * q + vec2(8.3, 2.8) + 0.08 * t)
   );
-  float f = smoothstep(0.0, 1.0, fbm(p + 2.0 * r));
+  float f = smoothstep(0.05, 0.95, fbm(p + 2.0 * w));
 
-  // intensity mask: strongest bottom-right, ~0 toward the top
-  float mx = smoothstep(0.15, 1.0, uv.x);          // right-weighted
-  float my = 1.0 - smoothstep(0.10, 0.95, uv.y);   // bottom-weighted
-  float mask = clamp(my * 0.7 + mx * 0.45 + my * mx * 0.75, 0.0, 1.0);
+  // intensity: strongest bottom-right, ~0 toward the top
+  float mx = smoothstep(0.15, 1.0, uv.x);
+  float my = 1.0 - smoothstep(0.10, 0.92, uv.y);
+  float mask = clamp(my * 0.7 + mx * 0.4 + my * mx * 0.8, 0.0, 1.0);
   float v = f * mask;
 
   vec3 offwhite = vec3(0.933, 0.945, 0.965);
   vec3 blue     = vec3(0.145, 0.271, 0.902);
-  vec3 navy     = vec3(0.063, 0.102, 0.322);
-  vec3 black    = vec3(0.024, 0.035, 0.110);
+  vec3 navy     = vec3(0.055, 0.090, 0.290);
+  vec3 black    = vec3(0.020, 0.030, 0.095);
 
   vec3 col = offwhite;
-  col = mix(col, blue, smoothstep(0.15, 0.55, v));
+  col = mix(col, blue, smoothstep(0.18, 0.55, v));
   col = mix(col, navy, smoothstep(0.50, 0.80, v));
-  col = mix(col, black, smoothstep(0.78, 1.00, v));
+  col = mix(col, black, smoothstep(0.80, 1.00, v));
 
   gl_FragColor = vec4(col, 1.0);
 }
@@ -127,7 +130,7 @@ export function AnimatedBackground() {
       stencil: false,
       powerPreference: "low-power",
     });
-    if (!gl) return; // CSS fallback colour shows
+    if (!gl) return;
 
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);
     const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
@@ -144,7 +147,6 @@ export function AnimatedBackground() {
     }
     gl.useProgram(prog);
 
-    // full-screen triangle
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(
@@ -159,8 +161,7 @@ export function AnimatedBackground() {
     const uRes = gl.getUniformLocation(prog, "u_res");
     const uTime = gl.getUniformLocation(prog, "u_time");
 
-    // the field is soft → render at low resolution and let it upscale.
-    const SCALE = 0.6;
+    const SCALE = 0.5; // soft field → render low-res and upscale
     const resize = () => {
       const w = Math.max(1, Math.floor(canvas.clientWidth * SCALE));
       const h = Math.max(1, Math.floor(canvas.clientHeight * SCALE));
@@ -199,7 +200,7 @@ export function AnimatedBackground() {
     };
 
     if (reduce) {
-      draw(start); // single static frame
+      draw(start);
     } else {
       startLoop();
     }
@@ -226,25 +227,22 @@ export function AnimatedBackground() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#eef1f6]"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-[#eef1f6]"
     >
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" />
 
-      {/* protect the headline area up top */}
-      <div className="absolute inset-x-0 top-0 h-[42vh] bg-gradient-to-b from-[#eef1f6] via-[#eef1f6]/80 to-transparent" />
+      {/* keep the headline area clean off-white */}
+      <div className="absolute inset-x-0 top-0 h-[40vh] bg-gradient-to-b from-[#eef1f6] via-[#eef1f6]/75 to-transparent" />
 
-      {/* fixed frosted grid bands, aligned to the 12-col grid */}
+      {/* fixed grid bands, aligned to the 12-col grid */}
       <div className="absolute inset-0 flex">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={i}
-            className="h-full flex-1 border-l border-white/15 first:border-l-0"
+            className="h-full flex-1 border-l border-white/10 first:border-l-0"
           />
         ))}
       </div>
-
-      {/* faint glass sheen */}
-      <div className="absolute inset-0 bg-white/[0.02]" />
     </div>
   );
 }

@@ -1,9 +1,8 @@
 import localFont from "next/font/local";
+import { Roboto_Mono } from "next/font/google";
 
 /**
- * PP Eiko — the single typeface for the whole site (per brand direction:
- * "Eiko from the get-go"). Regular weight is used for all type, from 140px
- * display headings down to captions.
+ * PP Eiko — the display face, used only for headlines (the value proposition).
  */
 export const eiko = localFont({
   src: [
@@ -16,4 +15,14 @@ export const eiko = localFont({
   variable: "--font-eiko",
   display: "swap",
   preload: true,
+});
+
+/**
+ * Roboto Mono — everything that isn't a headline (labels, index, footer, menu).
+ */
+export const robotoMono = Roboto_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-roboto-mono",
+  display: "swap",
 });

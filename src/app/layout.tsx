@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { eiko } from "@/lib/fonts";
+import { eiko, robotoMono } from "@/lib/fonts";
 import { site } from "@/lib/site";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { SiteFooter } from "@/components/site/site-footer";
+import { AnimatedBackground } from "@/components/visual/animated-background";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,8 +34,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${eiko.variable} h-full`}>
+    <html lang="en" className={`${eiko.variable} ${robotoMono.variable} h-full`}>
       <body className="min-h-full antialiased">
+        <AnimatedBackground />
         <SmoothScroll>
           <main id="main">{children}</main>
           <SiteFooter />

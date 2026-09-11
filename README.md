@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Orbit Lines
+
+`public/orbit-lines/index.html` is a self-contained static page (no build step) that renders and animates the
+"orbit rings" moiré artwork and exports true-vector SVG / 2720×2480 PNG. It is served by this site at
+`/orbit-lines/`, and can also be deployed on its own as a static Vercel project (root directory
+`public/orbit-lines`). All controls round-trip through the URL query string via "Copy share link".

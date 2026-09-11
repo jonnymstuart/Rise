@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Orbit Lines</title>
+<style>
+  :root { --bg:#2f2f2d; --ink:#efeada; --muted:#9a968c; --line:#44443f; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  main { max-width:720px; margin:0 auto; padding:24px 20px 48px; }
+  .stage { width:100%; aspect-ratio:680/620; }
+  .stage svg { display:block; width:100%; height:100%; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:22px 0 26px; }
+  .bar .spacer { flex:1; }
+  button, select { font:inherit; color:var(--ink); background:transparent; border:1px solid var(--line);
+    border-radius:999px; padding:7px 16px; cursor:pointer; }
+  button:hover, select:hover { border-color:var(--muted); }
+  button.primary { background:var(--ink); color:var(--bg); border-color:var(--ink); min-width:88px; }
+  select { border-radius:8px; padding:6px 10px; width:100%; }
+  select option { color:#000; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:18px 32px; }
+  .ctl label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted);
+    letter-spacing:.02em; margin-bottom:6px; }
+  .ctl label output { color:var(--ink); font-variant-numeric:tabular-nums; }
+  .ctl label .lock { color:var(--muted); font-size:11px; margin-left:auto; margin-right:10px; cursor:pointer; text-decoration:underline dotted; }
+  input[type=range] { width:100%; accent-color:var(--ink); margin:0; display:block; }
+  input[type=range]:disabled { opacity:.35; }
+  details { margin-top:32px; border-top:1px solid var(--line); padding-top:16px; }
+  summary { cursor:pointer; color:var(--muted); list-style:none; display:flex; justify-content:space-between; user-select:none; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:"+"; }
+  details[open] summary::after { content:"–"; }
+  details[open] summary { margin-bottom:22px; }
+  h4 { font-weight:500; font-size:12px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin:28px 0 14px; }
+  footer { margin-top:44px; font-size:12px; color:var(--muted); text-align:center; }
+  footer a { color:inherit; }
+  .toast { font-size:12px; color:var(--muted); min-width:60px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 680 620" xmlns="http://www.w3.org/2000/svg" aria-label="Orbit Lines">
+      <rect width="680" height="620" fill="#2f2f2d"/>
+      <g id="rings" fill="none" stroke="#efeada" stroke-linejoin="round"></g>
+    </svg>
+  </div>
+
+  <div class="bar">
+    <button id="play" class="primary">Play</button>
+    <span class="spacer"></span>
+    <button id="dlSvg">Download SVG</button>
+    <button id="dlPng">Download PNG</button>
+    <button id="share">Copy share link</button>
+    <span id="toast" class="toast"></span>
+  </div>
+
+  <div id="simple" class="grid"></div>
+
+  <details id="adv">
+    <summary>Advanced</summary>
+    <div id="advanced" class="grid"></div>
+    <h4>Symmetry</h4>
+    <div id="symmetry" class="grid"></div>
+    <div class="bar" style="margin-bottom:0">
+      <button id="random">Randomize</button>
+      <button id="reset">Reset to preset</button>
+    </div>
+  </details>
+
+  <footer>Orbit Lines · <a href="https://userise.co" rel="noopener">Rise</a></footer>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- constants ----------
+const BG = '#2f2f2d', INK = '#efeada';
+const QX = 340, QY = 320;            // pivot / canvas anchor
+const PTS = 128;                     // points per ring
+const DEG = Math.PI / 180;
+const COS = new Float64Array(PTS), SIN = new Float64Array(PTS);
+for (let j = 0; j < PTS; j++) { const s = j / PTS * 2 * Math.PI; COS[j] = Math.cos(s); SIN[j] = Math.sin(s); }
+
+// Client preset (§3) + animation defaults (§4)
+const PRESET = Object.freeze({
+  lines: 200, size: 138, sweepStart: 322, sweepSpan: 233, pivotReach: 0.78,
+  roundness: 1, spinRatio: 0, tilt: 180, perspective: 0.4, depthFade: 0.83,
+  depthAxis: 115, symmetry: 'mirror', symAxis: 0, twinFade: 1, imperfection: 30,
+  sweepWidth: 90, speed: 1,
+});
+
+const deg = v => Math.round(v) + '°';
+const num = d => v => v.toFixed(d);
+const DEFS = [
+  // Simple tier
+  { k: 'speed',       label: 'Speed',       min: 0.1, max: 3,   step: 0.05, tier: 'simple',   fmt: v => v.toFixed(2) + '×' },
+  { k: 'depthAxis',   label: 'Depth axis',  min: 0,   max: 360, step: 1,    tier: 'simple',   fmt: deg },
+  { k: 'sweepWidth',  label: 'Sweep width', min: 10,  max: 180, step: 1,    tier: 'simple',   fmt: deg },
+  { k: 'perspective', label: 'Depth',       min: 0,   max: 1,   step: 0.01, tier: 'simple',   fmt: num(2) },
+  // Advanced tier
+  { k: 'lines',       label: 'Lines',       min: 10,  max: 400, step: 1,    tier: 'advanced', fmt: num(0), rnd: [60, 260] },
+  { k: 'size',        label: 'Size',        min: 40,  max: 300, step: 1,    tier: 'advanced', fmt: num(0), rnd: [90, 200] },
+  { k: 'pivotReach',  label: 'Pivot reach', min: 0,   max: 1.5, step: 0.01, tier: 'advanced', fmt: num(2) },
+  { k: 'sweepStart',  label: 'Sweep start', min: 0,   max: 360, step: 1,    tier: 'advanced', fmt: deg },
+  { k: 'sweepSpan',   label: 'Sweep span',  min: 0,   max: 360, step: 1,    tier: 'advanced', fmt: deg },
+  { k: 'tilt',        label: 'Tilt',        min: 0,   max: 360, step: 1,    tier: 'advanced', fmt: deg },
+  { k: 'spinRatio',   label: 'Spin ratio',  min: -2,  max: 2,   step: 0.01, tier: 'advanced', fmt: num(2) },
+  { k: 'roundness',   label: 'Roundness',   min: 0.2, max: 1,   step: 0.01, tier: 'advanced', fmt: num(2), lockable: true },
+  { k: 'depthFade',   label: 'Depth fade',  min: 0,   max: 1,   step: 0.01, tier: 'advanced', fmt: num(2) },
+  // Symmetry
+  { k: 'symAxis',      label: 'Axis',         min: 0,   max: 180, step: 1,    tier: 'symmetry', fmt: deg },
+  { k: 'twinFade',     label: 'Twin fade',    min: 0,   max: 1,   step: 0.01, tier: 'symmetry', fmt: num(2) },
+  { k: 'imperfection', label: 'Imperfection', min: -90, max: 90,  step: 1,    tier: 'symmetry', fmt: deg },
+];
+const SYM_MODES = [['mirror', 'Mirror'], ['rot2', '2-fold rotation'], ['off', 'Off']];
+
+// ---------- state ----------
+const P = { ...PRESET };
+let roundLocked = true;              // Simple mode locks roundness at 1.0
+let playing = false, phase = 0, raf = null;
+let liveAxis = P.depthAxis;          // the axis actually rendered (animated)
+const lowPower = matchMedia('(pointer:coarse)').matches || innerWidth < 700;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- geometry (§2) ----------
+function twinMatrix(p) {
+  if (p.symmetry === 'off') return null;
+  let m00, m01, m10, m11;
+  if (p.symmetry === 'mirror') {
+    const ux = Math.cos(p.symAxis * DEG), uy = -Math.sin(p.symAxis * DEG);
+    const a = ux * ux - uy * uy, b = 2 * ux * uy;
+    m00 = a; m01 = b; m10 = b; m11 = -a;
+  } else { m00 = -1; m01 = 0; m10 = 0; m11 = -1; }   // 2-fold rotation about Q
+  const c = Math.cos(p.imperfection * DEG), s = Math.sin(p.imperfection * DEG);
+  return [c * m00 - s * m10, c * m01 - s * m11, s * m00 + c * m10, s * m01 + c * m11];
+}
+
+// Returns an interleaved list [{pts, op, w}] of ring, twin, ring, twin…
+function frame(p, axis, N) {
+  const out = [];
+  const M = twinMatrix(p);
+  const axisR = axis * DEG;
+  const rn = roundLocked ? 1 : p.roundness;
+  for (let i = 0; i < N; i++) {
+    const t = N > 1 ? i / (N - 1) : 0;
+    const th = (p.sweepStart + p.sweepSpan * t) * DEG;
+    const z = Math.sin(th - axisR);
+    const sc = 1 / (1 + p.perspective * 0.45 * z);
+    const op = Math.max(0.8 * (1 - p.depthFade * 0.4 * (z + 1)), 0.06);
+    const w = 0.7 * sc;
+    const cx = QX + p.size * p.pivotReach * Math.cos(th) * sc;
+    const cy = QY + p.size * p.pivotReach * Math.sin(th) * sc;
+    const a = p.spinRatio * th + p.tilt * DEG;
+    const rx = p.size * sc, ry = p.size * rn * sc;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const pts = new Float64Array(PTS * 2);
+    for (let j = 0; j < PTS; j++) {
+      pts[2 * j]     = cx + rx * COS[j] * ca - ry * SIN[j] * sa;
+      pts[2 * j + 1] = cy + rx * COS[j] * sa + ry * SIN[j] * ca;
+    }
+    out.push({ pts, op, w });
+    if (M) {
+      const tp = new Float64Array(PTS * 2);
+      for (let j = 0; j < PTS; j++) {
+        const dx = pts[2 * j] - QX, dy = pts[2 * j + 1] - QY;
+        tp[2 * j]     = QX + M[0] * dx + M[1] * dy;
+        tp[2 * j + 1] = QY + M[2] * dx + M[3] * dy;
+      }
+      out.push({ pts: tp, op: op * p.twinFade, w });
+    }
+  }
+  return out;
+}
+
+function pathD(pts) {
+  let d = 'M' + pts[0].toFixed(1) + ' ' + pts[1].toFixed(1);
+  for (let j = 2; j < pts.length; j += 2) d += 'L' + pts[j].toFixed(1) + ' ' + pts[j + 1].toFixed(1);
+  return d + 'Z';
+}
+
+// ---------- SVG DOM rendering (§7) ----------
+const g = document.getElementById('rings');
+const pool = [];
+function render() {
+  const animating = playing || raf !== null;
+  const N = animating && lowPower ? Math.min(P.lines, 120) : P.lines;
+  const items = frame(P, liveAxis, N);
+  while (pool.length < items.length) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    g.appendChild(el); pool.push(el);
+  }
+  for (let i = 0; i < pool.length; i++) {
+    const el = pool[i], it = items[i];
+    if (!it) { el.setAttribute('d', ''); continue; }
+    el.setAttribute('d', pathD(it.pts));
+    el.setAttribute('stroke-opacity', it.op.toFixed(3));
+    el.setAttribute('stroke-width', it.w.toFixed(3));
+  }
+}
+
+// ---------- animation (§4): depth axis only, ping-pong ----------
+function tick() {
+  if (playing) {
+    phase += 0.012 * P.speed;
+    liveAxis = P.depthAxis + P.sweepWidth * Math.sin(phase);
+    render();
+    raf = requestAnimationFrame(tick);
+  } else {
+    // paused: ease the axis back to its centre, then stop
+    const d = P.depthAxis - liveAxis;
+    if (Math.abs(d) < 0.05) { liveAxis = P.depthAxis; raf = null; render(); return; }
+    liveAxis += d * 0.12;
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+}
+const playBtn = document.getElementById('play');
+function setPlaying(on) {
+  playing = on;
+  playBtn.textContent = on ? 'Pause' : 'Play';
+  if (on) { phase = 0; if (raf === null) raf = requestAnimationFrame(tick); }
+  else if (raf === null) raf = requestAnimationFrame(tick);
+}
+playBtn.addEventListener('click', () => setPlaying(!playing));
+addEventListener('keydown', e => {
+  if (e.code === 'Space' && !/INPUT|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); setPlaying(!playing); }
+});
+
+// ---------- UI ----------
+const inputs = {}, outputs = {};
+function makeSlider(def, host) {
+  const wrap = document.createElement('div'); wrap.className = 'ctl';
+  const label = document.createElement('label');
+  label.innerHTML = `<span>${def.label}</span>`;
+  if (def.lockable) {
+    const lock = document.createElement('span'); lock.className = 'lock'; lock.id = 'lock-' + def.k;
+    lock.addEventListener('click', () => { roundLocked = !roundLocked; syncUI(); onChange(); });
+    label.appendChild(lock);
+  }
+  const out = document.createElement('output'); label.appendChild(out);
+  const inp = document.createElement('input');
+  inp.type = 'range'; inp.min = def.min; inp.max = def.max; inp.step = def.step; inp.id = 'in-' + def.k;
+  inp.addEventListener('input', () => { P[def.k] = +inp.value; out.textContent = def.fmt(P[def.k]); onChange(); });
+  wrap.append(label, inp); host.appendChild(wrap);
+  inputs[def.k] = inp; outputs[def.k] = out;
+}
+const hosts = { simple: document.getElementById('simple'), advanced: document.getElementById('advanced'), symmetry: document.getElementById('symmetry') };
+// Symmetry mode select goes first in its section
+{
+  const wrap = document.createElement('div'); wrap.className = 'ctl';
+  wrap.innerHTML = '<label><span>Mode</span></label>';
+  const sel = document.createElement('select'); sel.id = 'in-symmetry';
+  for (const [v, t] of SYM_MODES) { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); }
+  sel.addEventListener('change', () => { P.symmetry = sel.value; onChange(); });
+  wrap.appendChild(sel); hosts.symmetry.appendChild(wrap); inputs.symmetry = sel;
+}
+for (const def of DEFS) makeSlider(def, hosts[def.tier]);
+
+function syncUI() {
+  for (const def of DEFS) {
+    inputs[def.k].value = P[def.k];
+    outputs[def.k].textContent = def.fmt(def.lockable && roundLocked ? 1 : P[def.k]);
+    if (def.lockable) {
+      inputs[def.k].disabled = roundLocked;
+      document.getElementById('lock-' + def.k).textContent = roundLocked ? 'locked · unlock' : 'lock';
+    }
+  }
+  inputs.symmetry.value = P.symmetry;
+}
+function onChange() {
+  if (!playing) { liveAxis = P.depthAxis; }
+  render();
+}
+
+// ---------- URL state (§6, optional) ----------
+function toQuery() {
+  const q = new URLSearchParams();
+  for (const k of Object.keys(PRESET)) if (P[k] !== PRESET[k]) q.set(k, typeof P[k] === 'number' ? +P[k].toFixed(3) : P[k]);
+  if (!roundLocked) q.set('unlock', '1');
+  const s = q.toString();
+  return location.origin + location.pathname + (s ? '?' + s : '');
+}
+function fromQuery() {
+  const q = new URLSearchParams(location.search);
+  if (![...q.keys()].length) return;
+  for (const def of DEFS) {
+    if (!q.has(def.k)) continue;
+    const v = parseFloat(q.get(def.k));
+    if (Number.isFinite(v)) P[def.k] = Math.min(def.max, Math.max(def.min, v));
+  }
+  if (q.has('symmetry') && SYM_MODES.some(([v]) => v === q.get('symmetry'))) P.symmetry = q.get('symmetry');
+  if (q.get('unlock') === '1') roundLocked = false;
+}
+
+// ---------- export (§6) ----------
+function stamp() { return new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19); }
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function svgString() {
+  const items = frame(P, liveAxis, P.lines);
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1240" viewBox="0 0 680 620">\n` +
+          `<rect width="680" height="620" fill="${BG}"/>\n<g fill="none" stroke="${INK}" stroke-linejoin="round">\n`;
+  for (const it of items) s += `<path d="${pathD(it.pts)}" stroke-opacity="${it.op.toFixed(3)}" stroke-width="${it.w.toFixed(3)}"/>\n`;
+  return s + '</g>\n</svg>\n';
+}
+document.getElementById('dlSvg').addEventListener('click', () => {
+  download(new Blob([svgString()], { type: 'image/svg+xml' }), `orbit-lines-${stamp()}.svg`);
+});
+document.getElementById('dlPng').addEventListener('click', () => {
+  const S = 4, c = document.createElement('canvas');
+  c.width = 680 * S; c.height = 620 * S;                     // 2720 × 2480
+  const ctx = c.getContext('2d');
+  ctx.scale(S, S);
+  ctx.fillStyle = BG; ctx.fillRect(0, 0, 680, 620);
+  ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+  for (const it of frame(P, liveAxis, P.lines)) {
+    ctx.globalAlpha = it.op; ctx.lineWidth = it.w;
+    ctx.beginPath(); ctx.moveTo(it.pts[0], it.pts[1]);
+    for (let j = 2; j < it.pts.length; j += 2) ctx.lineTo(it.pts[j], it.pts[j + 1]);
+    ctx.closePath(); ctx.stroke();
+  }
+  c.toBlob(b => download(b, `orbit-lines-${stamp()}.png`), 'image/png');
+});
+const toast = document.getElementById('toast');
+function say(msg) { toast.textContent = msg; clearTimeout(say.t); say.t = setTimeout(() => toast.textContent = '', 1800); }
+document.getElementById('share').addEventListener('click', async () => {
+  const url = toQuery();
+  history.replaceState(null, '', url);
+  try { await navigator.clipboard.writeText(url); say('Link copied'); }
+  catch { say('Link in address bar'); }
+});
+
+// ---------- randomize / reset ----------
+document.getElementById('random').addEventListener('click', () => {
+  for (const def of DEFS) {
+    if (def.tier === 'simple') continue;
+    if (def.lockable && roundLocked) continue;
+    const [lo, hi] = def.rnd || [def.min, def.max];
+    const v = lo + Math.random() * (hi - lo);
+    P[def.k] = +(Math.round(v / def.step) * def.step).toFixed(3);
+  }
+  P.symmetry = SYM_MODES[Math.floor(Math.random() * SYM_MODES.length)][0];
+  syncUI(); onChange();
+});
+document.getElementById('reset').addEventListener('click', () => {
+  Object.assign(P, PRESET); roundLocked = true; phase = 0;
+  history.replaceState(null, '', location.pathname);
+  syncUI(); onChange();
+});
+
+// ---------- boot: load paused on the resting frame ----------
+fromQuery();
+syncUI();
+liveAxis = P.depthAxis;
+render();
+if (reducedMotion) playBtn.title = 'Reduced motion is on; animation starts only when you press Play.';
+})();
+</script>
+</body>
+</html>

@@ -38,6 +38,8 @@
   footer { margin-top:44px; font-size:12px; color:var(--muted); text-align:center; }
   footer a { color:inherit; }
   .toast { font-size:12px; color:var(--muted); min-width:60px; }
+  .hint { font-size:12px; color:var(--muted); margin:-12px 0 22px; }
+  .hint em { font-style:normal; color:var(--ink); }
 </style>
 </head>
 <body>
@@ -57,6 +59,8 @@
     <button id="share">Copy share link</button>
     <span id="toast" class="toast"></span>
   </div>
+
+  <p class="hint">Every change updates the address bar. Copy the URL, or use <em>Copy share link</em>, to send this exact look to someone.</p>
 
   <div id="simple" class="grid"></div>
 
@@ -124,6 +128,7 @@ const P = { ...PRESET };
 let roundLocked = true;              // Simple mode locks roundness at 1.0
 let playing = false, phase = 0, raf = null;
 let liveAxis = P.depthAxis;          // the axis actually rendered (animated)
+let autoplay = false;                // set from ?play=1 in a shared link
 const lowPower = matchMedia('(pointer:coarse)').matches || innerWidth < 700;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -225,6 +230,7 @@ function setPlaying(on) {
   playBtn.textContent = on ? 'Pause' : 'Play';
   if (on) { phase = 0; if (raf === null) raf = requestAnimationFrame(tick); }
   else if (raf === null) raf = requestAnimationFrame(tick);
+  syncURL();
 }
 playBtn.addEventListener('click', () => setPlaying(!playing));
 addEventListener('keydown', e => {
@@ -275,6 +281,13 @@ function syncUI() {
 function onChange() {
   if (!playing) { liveAxis = P.depthAxis; }
   render();
+  syncURL();
+}
+// Keep the address bar in sync with the current settings so the URL is always shareable.
+let urlTimer = null;
+function syncURL() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => { try { history.replaceState(null, '', toQuery()); } catch (e) {} }, 150);
 }
 
 // ---------- URL state (§6, optional) ----------
@@ -282,6 +295,7 @@ function toQuery() {
   const q = new URLSearchParams();
   for (const k of Object.keys(PRESET)) if (P[k] !== PRESET[k]) q.set(k, typeof P[k] === 'number' ? +P[k].toFixed(3) : P[k]);
   if (!roundLocked) q.set('unlock', '1');
+  if (playing) q.set('play', '1');
   const s = q.toString();
   return location.origin + location.pathname + (s ? '?' + s : '');
 }
@@ -295,6 +309,7 @@ function fromQuery() {
   }
   if (q.has('symmetry') && SYM_MODES.some(([v]) => v === q.get('symmetry'))) P.symmetry = q.get('symmetry');
   if (q.get('unlock') === '1') roundLocked = false;
+  autoplay = q.get('play') === '1' && !reducedMotion;
 }
 
 // ---------- export (§6) ----------
@@ -335,7 +350,7 @@ function say(msg) { toast.textContent = msg; clearTimeout(say.t); say.t = setTim
 document.getElementById('share').addEventListener('click', async () => {
   const url = toQuery();
   history.replaceState(null, '', url);
-  try { await navigator.clipboard.writeText(url); say('Link copied'); }
+  try { await navigator.clipboard.writeText(url); say('Link copied — it includes all current settings'); }
   catch { say('Link in address bar'); }
 });
 
@@ -362,6 +377,7 @@ fromQuery();
 syncUI();
 liveAxis = P.depthAxis;
 render();
+if (autoplay) setPlaying(true);
 if (reducedMotion) playBtn.title = 'Reduced motion is on; animation starts only when you press Play.';
 })();
 </script>
